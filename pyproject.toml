@@ -1,0 +1,126 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-visibility"
+version = "0.1.0"
+description = "Make your website optimally visible to AI crawlers, LLM search engines, and generative AI — GEO & AEO toolkit for Python"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Muhammad Faizan", email = "muhammadfaizanjanjua109@gmail.com" },
+]
+keywords = [
+    "ai",
+    "seo",
+    "geo",
+    "aeo",
+    "llm",
+    "crawler",
+    "ai-visibility",
+    "generative-engine-optimization",
+    "structured-data",
+    "json-ld",
+    "llms-txt",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Framework :: Flask",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+django = ["django>=3.2"]
+flask = ["flask>=2.0"]
+fastapi = ["fastapi>=0.68", "starlette>=0.19"]
+cli = ["click>=8.0", "httpx>=0.24", "rich>=13.0"]
+all = ["ai-visibility[django,flask,fastapi,cli]"]
+dev = [
+    "django>=3.2",
+    "flask>=2.0",
+    "fastapi>=0.68",
+    "starlette>=0.19",
+    "click>=8.0",
+    "httpx>=0.24",
+    "rich>=13.0",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "mypy",
+    "ruff",
+]
+
+[project.scripts]
+ai-visibility = "ai_visibility.cli:main"
+
+[project.urls]
+Homepage = "https://crawlpod.com"
+Documentation = "https://crawlpod.com/docs/python"
+Repository = "https://github.com/Muhammadfaizanjanjua109/ai-visibility-python"
+"Bug Tracker" = "https://github.com/Muhammadfaizanjanjua109/ai-visibility-python/issues"
+"npm Package" = "https://www.npmjs.com/package/ai-visibility"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_visibility"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+asyncio_mode = "auto"
+
+[tool.mypy]
+# mypy 2.x dropped the ability to type-check against a 3.9 target; the
+# package itself still declares requires-python = ">=3.9".
+python_version = "3.10"
+strict = true
+packages = ["ai_visibility"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["django.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+# UP007/UP045 push toward `X | Y` / `X | None` syntax, but this package
+# targets Python 3.9 at runtime (requires-python = ">=3.9"), where that
+# syntax isn't safe outside `from __future__ import annotations` strings.
+ignore = ["UP007", "UP045"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ai_visibility"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test fixtures embed literal HTML documents; wrapping them hurts
+# readability more than the line-length limit helps.
+"tests/*" = ["E501"]
+
+[tool.coverage.run]
+source = ["ai_visibility"]
+omit = ["*/middleware/*", "*/cli.py"]

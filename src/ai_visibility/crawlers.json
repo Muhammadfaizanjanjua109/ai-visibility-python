@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "source": "https://github.com/Muhammadfaizanjanjua109/ai-visibility/blob/main/src/data/crawlers.ts",
+  "docs": "https://github.com/Muhammadfaizanjanjua109/ai-visibility/blob/main/docs/crawler-registry.md",
+  "crawlers": [
+    {
+      "name": "GPTBot",
+      "company": "OpenAI",
+      "userAgentPattern": "gptbot",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://developers.openai.com/api/docs/bots",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "ChatGPT-User",
+      "company": "OpenAI",
+      "userAgentPattern": "chatgpt-user",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://developers.openai.com/api/docs/bots",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "OAI-SearchBot",
+      "company": "OpenAI",
+      "userAgentPattern": "oai-searchbot",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://developers.openai.com/api/docs/bots",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "ClaudeBot",
+      "company": "Anthropic",
+      "userAgentPattern": "claudebot",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Claude-User",
+      "company": "Anthropic",
+      "userAgentPattern": "claude-user",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Claude-SearchBot",
+      "company": "Anthropic",
+      "userAgentPattern": "claude-searchbot",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "PerplexityBot",
+      "company": "Perplexity AI",
+      "userAgentPattern": "perplexitybot",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://docs.perplexity.ai/guides/bots",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Perplexity-User",
+      "company": "Perplexity AI",
+      "userAgentPattern": "perplexity-user",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://docs.perplexity.ai/guides/bots",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Google-Extended",
+      "company": "Google",
+      "userAgentPattern": "google-extended",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Googlebot",
+      "company": "Google",
+      "userAgentPattern": "googlebot",
+      "category": "indexing",
+      "verified": true,
+      "sourceUrl": "https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Bingbot",
+      "company": "Microsoft",
+      "userAgentPattern": "bingbot",
+      "category": "indexing",
+      "verified": true,
+      "sourceUrl": "https://www.bing.com/webmasters/help/which-crawlers-does-bing-use-8c184ec0",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "CCBot",
+      "company": "Common Crawl",
+      "userAgentPattern": "ccbot",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://commoncrawl.org/ccbot",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Amazonbot",
+      "company": "Amazon",
+      "userAgentPattern": "amazonbot",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://developer.amazon.com/amazonbot",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Amzn-SearchBot",
+      "company": "Amazon",
+      "userAgentPattern": "amzn-searchbot",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://developer.amazon.com/amazonbot",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Amzn-User",
+      "company": "Amazon",
+      "userAgentPattern": "amzn-user",
+      "category": "search",
+      "verified": true,
+      "sourceUrl": "https://developer.amazon.com/amazonbot",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "meta-externalagent",
+      "company": "Meta",
+      "userAgentPattern": "meta-externalagent",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://developers.facebook.com/docs/sharing/webmasters/crawler",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Applebot-Extended",
+      "company": "Apple",
+      "userAgentPattern": "applebot-extended",
+      "category": "training",
+      "verified": true,
+      "sourceUrl": "https://support.apple.com/en-us/119829",
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "Bytespider",
+      "company": "ByteDance",
+      "userAgentPattern": "bytespider",
+      "category": "training",
+      "verified": false,
+      "sourceUrl": null,
+      "lastChecked": "2026-08-03"
+    },
+    {
+      "name": "YouBot",
+      "company": "You.com",
+      "userAgentPattern": "youbot",
+      "category": "search",
+      "verified": false,
+      "sourceUrl": null,
+      "lastChecked": null
+    },
+    {
+      "name": "cohere-ai",
+      "company": "Cohere",
+      "userAgentPattern": "cohere-ai",
+      "category": "training",
+      "verified": false,
+      "sourceUrl": null,
+      "lastChecked": null
+    },
+    {
+      "name": "Diffbot",
+      "company": "Diffbot",
+      "userAgentPattern": "diffbot",
+      "category": "indexing",
+      "verified": false,
+      "sourceUrl": null,
+      "lastChecked": null
+    }
+  ]
+}
