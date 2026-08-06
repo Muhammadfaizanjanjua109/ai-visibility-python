@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Make your website optimally visible to AI crawlers, LLM search engines, and generative AI — GEO & AEO toolkit for Python"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "Muhammad Faizan", email = "muhammadfaizanjanjua109@gmail.com" },
 ]
@@ -34,7 +34,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -90,8 +89,6 @@ addopts = "--strict-markers"
 asyncio_mode = "auto"
 
 [tool.mypy]
-# mypy 2.x dropped the ability to type-check against a 3.9 target; the
-# package itself still declares requires-python = ">=3.9".
 python_version = "3.10"
 strict = true
 packages = ["ai_visibility"]
@@ -103,15 +100,11 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
-# UP007/UP045 push toward `X | Y` / `X | None` syntax, but this package
-# targets Python 3.9 at runtime (requires-python = ">=3.9"), where that
-# syntax isn't safe outside `from __future__ import annotations` strings.
-ignore = ["UP007", "UP045"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["ai_visibility"]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-from typing import Optional
 from urllib.parse import urljoin
 
 import click
@@ -34,7 +33,7 @@ def main() -> None:
     """ai-visibility: make your site optimally visible to AI crawlers."""
 
 
-def _check_url_exists(base_url: str, path: str, timeout: float) -> Optional[bool]:
+def _check_url_exists(base_url: str, path: str, timeout: float) -> bool | None:
     try:
         response = httpx.get(urljoin(base_url, path), timeout=timeout, follow_redirects=True)
         return bool(response.status_code == 200)
@@ -109,7 +108,7 @@ def generate() -> None:
     "--description", "summary", default=None, help="One-line summary (used as the blockquote)."
 )
 @click.option("--url", "site_url", default=None, help="Homepage URL, added as a link entry.")
-def generate_llms_txt_command(title: str, summary: Optional[str], site_url: Optional[str]) -> None:
+def generate_llms_txt_command(title: str, summary: str | None, site_url: str | None) -> None:
     """Generate llms.txt content."""
     config = LlmsTxtConfig(title=title, summary=summary)
     if site_url:

@@ -36,38 +36,48 @@ class TestAnalyzeContent:
 _EXCELLENT_HTML = (
     """<!DOCTYPE html>
 <html><head>
-<title>The Complete Guide to Widgets and Why They Matter</title>
-<meta name="description" content="Everything you need to know about widgets, how they work, and why they matter for your business today.">
-<meta property="og:title" content="The Complete Guide to Widgets">
-<meta property="og:description" content="Everything you need to know about widgets.">
-<meta property="og:image" content="https://example.com/widget.png">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Widgets"}</script>
+<title>The Complete Guide to Widgets</title>
+<meta name="author" content="Jane Doe">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Widgets", "author": {"@type": "Person", "name": "Jane Doe"}, "publisher": {"@type": "Organization", "name": "Acme"}}</script>
 </head><body>
-<header><nav>Home</nav></header>
-<main><article>
 <h1>The Complete Guide to Widgets</h1>
-<h2>What is a Widget?</h2>
 <p>"""
-    + ("A widget is a small mechanical or software component. " * 30)
+    + (
+        "Widgets are small mechanical devices used across 50 industries since 1990, "
+        "with 3 main types and 12 documented subtypes. " * 3
+    )
     + """</p>
-</article></main>
-<footer>Copyright 2026</footer>
+<h2>History</h2>
+<p>"""
+    + (
+        "In 1990 the first widget factory opened, producing 500 units per day "
+        "with 42 employees across 5 departments. " * 3
+    )
+    + """</p>
+<h2>Contact</h2>
+<p>Reach the author, who has over 10 years of documented widget industry
+expertise, at <a href="mailto:jane@acme.example">jane@acme.example</a> with
+any questions about this guide or its 2 main sections.</p>
 </body></html>"""
 )
 
 
 _GOOD_HTML = (
-    """<html><head><title>The Complete Guide to Widgets and Why They Matter</title>
-<meta name="description" content="Everything you need to know about widgets, how they work, and why they matter for your business today.">
+    """<html><head>
+<title>The Complete Guide to Widgets</title>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Widgets"}</script>
 </head><body>
-<main><article>
 <h1>The Complete Guide to Widgets</h1>
-<h2>What is a Widget?</h2>
 <p>"""
-    + ("A widget is a small mechanical or software component. " * 30)
+    + (
+        "Widgets are small mechanical devices used across 50 industries since 1990, "
+        "with 3 main types and 12 documented subtypes. " * 3
+    )
     + """</p>
-</article></main>
+<h2>History</h2>
+<p>"""
+    + ("In 1990 the first widget factory opened, producing 500 units per day. " * 3)
+    + """</p>
 </body></html>"""
 )
 

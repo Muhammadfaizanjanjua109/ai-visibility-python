@@ -21,7 +21,8 @@ Requires the ``ai-visibility[django]`` extra.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from ai_visibility.analytics import CrawlerAnalytics
 from ai_visibility.middleware.base import AIVisibilityCore, MiddlewareConfig, is_html_content_type

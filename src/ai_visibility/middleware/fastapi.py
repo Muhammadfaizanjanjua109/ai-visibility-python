@@ -13,7 +13,7 @@ Requires the ``ai-visibility[fastapi]`` extra.
 
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from starlette.applications import Starlette
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -47,11 +47,11 @@ class AIVisibilityMiddleware(BaseHTTPMiddleware):
         *,
         optimize: bool = True,
         inject_schemas: bool = False,
-        schemas: Optional[list[dict[str, Any]]] = None,
+        schemas: list[dict[str, Any]] | None = None,
         log_visits: bool = True,
-        on_detect: Optional[OnDetectCallback] = None,
-        optimize_options: Optional[OptimizeOptions] = None,
-        analytics: Optional[CrawlerAnalytics] = None,
+        on_detect: OnDetectCallback | None = None,
+        optimize_options: OptimizeOptions | None = None,
+        analytics: CrawlerAnalytics | None = None,
     ) -> None:
         """Create the middleware.
 

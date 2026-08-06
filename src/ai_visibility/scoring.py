@@ -1,12 +1,24 @@
-"""Multi-dimensional GEO/AI-visibility scoring for an HTML page."""
+"""Multi-dimensional GEO/AI-visibility scoring for an HTML page.
+
+The seven dimensions and their default weights are vendored from the npm
+package's published ``scoring-weights.json`` (see
+:mod:`ai_visibility.scoring_weights`), so scoring here uses the same
+dimension set and weighting as the JS/TypeScript version rather than an
+independently invented rubric. The npm package's own docs describe this
+as a heuristic rubric with no published exact formulas ("a prioritized
+to-do list, not a pass/fail grade"), so the *per-dimension arithmetic*
+below is an original Python implementation written to match each
+dimension's published description — it is not a byte-for-byte port of
+unpublished TypeScript internals.
+"""
 
 from __future__ import annotations
 
 import json
 import re
 from html.parser import HTMLParser
-from typing import Optional
 
+from ai_visibility.scoring_weights import get_default_weights
 from ai_visibility.types import Finding, ScoreResult, ScoringConfig, Severity
 
 _VOID_ELEMENTS = {
@@ -27,30 +39,39 @@ _VOID_ELEMENTS = {
 }
 
 _NON_TEXT_TAGS = {"script", "style", "noscript"}
-_SEMANTIC_TAGS = {"main", "article", "nav", "header", "footer", "section", "aside", "figure"}
 _HEADING_RE = re.compile(r"^h([1-6])$")
+_FACT_TOKEN_RE = re.compile(r"\b\d[\d,.:%]*\b")
+_ROBOTS_BLOCK_TOKENS = {"noindex", "none"}
+
+_MIN_SECTION_WORDS = 20
+_STRONG_ANSWER_WORDS = 40
+_WEAK_ANSWER_WORDS = 20
 
 
 class _SignalCollector(HTMLParser):
-    """Single-pass extraction of the signals scoring dimensions need."""
+    """Single-pass extraction of the signals the scoring dimensions need."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.tags_seen: set[str] = set()
-        self.meta_description: Optional[str] = None
-        self.og_tags: dict[str, str] = {}
-        self.title_text = ""
         self.headings: list[tuple[int, str]] = []
         self.jsonld_blocks: list[str] = []
-        self.text_chars = 0
+        self.meta_author: str | None = None
+        self.meta_robots: str | None = None
+        self.has_contact_link = False
+        self.section_word_counts: list[int] = []
+        self.first_paragraph_word_count = 0
+        self.total_word_count = 0
+        self.fact_token_count = 0
 
         self._open_stack: list[str] = []
-        self._non_text_depth_marker: Optional[int] = None
-        self._in_title = False
-        self._current_heading_level: Optional[int] = None
+        self._non_text_depth_marker: int | None = None
+        self._current_heading_level: int | None = None
         self._current_heading_buffer: list[str] = []
         self._in_ld_json = False
         self._ld_buffer: list[str] = []
+        self._active_section_idx: int | None = None
+        self._capturing_first_paragraph = False
+        self._first_paragraph_done = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._open(tag, attrs, self_closing=tag in _VOID_ELEMENTS)
@@ -61,18 +82,21 @@ class _SignalCollector(HTMLParser):
     def _open(self, tag: str, attrs: list[tuple[str, str | None]], self_closing: bool) -> None:
         attrs_dict = dict(attrs)
 
-        if tag in _SEMANTIC_TAGS:
-            self.tags_seen.add(tag)
-        if tag == "title":
-            self._in_title = True
         if tag == "meta":
             name = (attrs_dict.get("name") or "").lower()
-            property_ = (attrs_dict.get("property") or "").lower()
             content = attrs_dict.get("content")
-            if name == "description" and content:
-                self.meta_description = content
-            if property_.startswith("og:") and content is not None:
-                self.og_tags[property_] = content
+            if name == "author" and content:
+                self.meta_author = content
+            if name == "robots" and content:
+                self.meta_robots = content
+
+        if tag == "a":
+            href = (attrs_dict.get("href") or "").strip().lower()
+            if href.startswith(("mailto:", "tel:")):
+                self.has_contact_link = True
+
+        if tag == "p" and not self_closing and not self._first_paragraph_done:
+            self._capturing_first_paragraph = True
 
         heading_match = _HEADING_RE.match(tag)
         if heading_match:
@@ -94,13 +118,18 @@ class _SignalCollector(HTMLParser):
         depth_before_pop = len(self._open_stack)
         self._open_stack.pop()
 
-        if tag == "title":
-            self._in_title = False
+        if tag == "p" and self._capturing_first_paragraph:
+            self._capturing_first_paragraph = False
+            self._first_paragraph_done = True
+
         if _HEADING_RE.match(tag) and self._current_heading_level is not None:
             self.headings.append(
                 (self._current_heading_level, "".join(self._current_heading_buffer).strip())
             )
+            self.section_word_counts.append(0)
+            self._active_section_idx = len(self.headings) - 1
             self._current_heading_level = None
+
         if tag == "script" and self._in_ld_json:
             self.jsonld_blocks.append("".join(self._ld_buffer))
             self._in_ld_json = False
@@ -117,21 +146,27 @@ class _SignalCollector(HTMLParser):
             return
         if self._non_text_depth_marker is not None:
             return
-        if self._in_title:
-            self.title_text += data
+
         if self._current_heading_level is not None:
             self._current_heading_buffer.append(data)
-        self.text_chars += len(data.strip())
+        else:
+            if self._active_section_idx is not None:
+                self.section_word_counts[self._active_section_idx] += len(data.split())
+            if self._capturing_first_paragraph:
+                self.first_paragraph_word_count += len(data.split())
+
+        self.total_word_count += len(data.split())
+        self.fact_token_count += len(_FACT_TOKEN_RE.findall(data))
 
 
-def _score_structured_data(collector: _SignalCollector, findings: list[Finding]) -> int:
+def _score_schema_coverage(collector: _SignalCollector, findings: list[Finding]) -> int:
     if not collector.jsonld_blocks:
         findings.append(
             Finding(
                 severity=Severity.CRITICAL,
                 message="No JSON-LD structured data found on the page.",
                 fix="Add JSON-LD schema markup, e.g. via ai_visibility.schema.article_schema().",
-                dimension="structured_data",
+                dimension="schema_coverage",
             )
         )
         return 0
@@ -151,7 +186,7 @@ def _score_structured_data(collector: _SignalCollector, findings: list[Finding])
                 severity=Severity.WARNING,
                 message="JSON-LD script tag(s) found but none parsed as valid schema.org markup.",
                 fix="Validate JSON-LD content and ensure it includes '@type'.",
-                dimension="structured_data",
+                dimension="schema_coverage",
             )
         )
         return 40
@@ -159,113 +194,7 @@ def _score_structured_data(collector: _SignalCollector, findings: list[Finding])
     return 100
 
 
-def _score_semantic_html(collector: _SignalCollector, findings: list[Finding]) -> int:
-    important = {"main", "article", "header", "footer", "nav"}
-    found_important = collector.tags_seen & important
-    score = round(100 * len(collector.tags_seen) / len(_SEMANTIC_TAGS))
-
-    if "main" not in collector.tags_seen and "article" not in collector.tags_seen:
-        findings.append(
-            Finding(
-                severity=Severity.WARNING,
-                message="No <main> or <article> landmark found.",
-                fix="Wrap primary content in a <main> or <article> element "
-                "so crawlers can locate it.",
-                dimension="semantic_html",
-            )
-        )
-    missing_important = important - found_important
-    if missing_important and missing_important != {"main", "article"}:
-        findings.append(
-            Finding(
-                severity=Severity.INFO,
-                message=f"Missing semantic landmark(s): {', '.join(sorted(missing_important))}.",
-                fix="Use semantic HTML5 elements (header, nav, main, article, footer) "
-                "over generic <div>s.",
-                dimension="semantic_html",
-            )
-        )
-    return min(score, 100)
-
-
-def _score_meta_tags(collector: _SignalCollector, findings: list[Finding]) -> int:
-    score = 0
-    title = collector.title_text.strip()
-    if title:
-        score += 30
-    else:
-        findings.append(
-            Finding(
-                severity=Severity.CRITICAL,
-                message="Missing or empty <title> tag.",
-                fix="Add a descriptive <title> tag summarizing the page.",
-                dimension="meta_tags",
-            )
-        )
-
-    description = (collector.meta_description or "").strip()
-    if description:
-        score += 30
-        if not (50 <= len(description) <= 160):
-            findings.append(
-                Finding(
-                    severity=Severity.INFO,
-                    message=f"Meta description length ({len(description)} chars) is outside "
-                    "the ideal 50-160 range.",
-                    fix="Rewrite the meta description to be 50-160 characters.",
-                    dimension="meta_tags",
-                )
-            )
-    else:
-        findings.append(
-            Finding(
-                severity=Severity.WARNING,
-                message="Missing meta description.",
-                fix='Add <meta name="description" content="..."> summarizing the page.',
-                dimension="meta_tags",
-            )
-        )
-
-    if collector.og_tags.get("og:title"):
-        score += 15
-    else:
-        findings.append(
-            Finding(
-                severity=Severity.INFO,
-                message="Missing og:title meta tag.",
-                fix='Add <meta property="og:title" content="...">.',
-                dimension="meta_tags",
-            )
-        )
-
-    if collector.og_tags.get("og:description"):
-        score += 15
-    else:
-        findings.append(
-            Finding(
-                severity=Severity.INFO,
-                message="Missing og:description meta tag.",
-                fix='Add <meta property="og:description" content="...">.',
-                dimension="meta_tags",
-            )
-        )
-
-    if collector.og_tags.get("og:image"):
-        score += 10
-    else:
-        findings.append(
-            Finding(
-                severity=Severity.INFO,
-                message="Missing og:image meta tag.",
-                fix='Add <meta property="og:image" content="...">.',
-                dimension="meta_tags",
-            )
-        )
-
-    return score
-
-
-def _score_heading_hierarchy(collector: _SignalCollector, findings: list[Finding]) -> int:
+def _score_heading_structure(collector: _SignalCollector, findings: list[Finding]) -> int:
     headings = collector.headings
     if not headings:
         findings.append(
@@ -273,7 +202,7 @@ def _score_heading_hierarchy(collector: _SignalCollector, findings: list[Finding
                 severity=Severity.WARNING,
                 message="No headings found on the page.",
                 fix="Add a single <h1> and a logical heading hierarchy (h2, h3, ...).",
-                dimension="heading_hierarchy",
+                dimension="heading_structure",
             )
         )
         return 0
@@ -288,7 +217,7 @@ def _score_heading_hierarchy(collector: _SignalCollector, findings: list[Finding
                 severity=Severity.WARNING,
                 message="No <h1> found on the page.",
                 fix="Add exactly one <h1> describing the page's main topic.",
-                dimension="heading_hierarchy",
+                dimension="heading_structure",
             )
         )
     else:
@@ -297,7 +226,7 @@ def _score_heading_hierarchy(collector: _SignalCollector, findings: list[Finding
                 severity=Severity.INFO,
                 message=f"Found {h1_count} <h1> elements; expected exactly one.",
                 fix="Use a single <h1> per page for a clear primary topic.",
-                dimension="heading_hierarchy",
+                dimension="heading_structure",
             )
         )
 
@@ -315,7 +244,7 @@ def _score_heading_hierarchy(collector: _SignalCollector, findings: list[Finding
                 severity=Severity.INFO,
                 message="Heading levels skip a level (e.g. h2 to h4 with no h3).",
                 fix="Keep heading levels sequential without skipping.",
-                dimension="heading_hierarchy",
+                dimension="heading_structure",
             )
         )
 
@@ -327,59 +256,40 @@ def _score_heading_hierarchy(collector: _SignalCollector, findings: list[Finding
                 severity=Severity.INFO,
                 message="One or more headings have no text content.",
                 fix="Ensure every heading element contains descriptive text.",
-                dimension="heading_hierarchy",
+                dimension="heading_structure",
             )
         )
 
     return score
 
 
-def _score_accessibility(collector: _SignalCollector, html: str, findings: list[Finding]) -> int:
-    total_length = max(len(html), 1)
-    ratio = collector.text_chars / total_length
+def _score_crawler_accessibility(
+    collector: _SignalCollector,
+    has_llms_txt: bool | None,
+    has_ai_txt: bool | None,
+    findings: list[Finding],
+) -> tuple[int, bool]:
+    """Score crawler accessibility. Returns ``(score, hard_block)``.
 
-    if collector.text_chars < 100:
+    A hard meta-robots block is a gate, not just a differentiator: per the
+    vendored dimension description, it "zeroes out every other dimension's
+    value", so callers must zero the overall score when ``hard_block`` is
+    ``True``.
+    """
+    robots_tokens = {token.strip() for token in (collector.meta_robots or "").lower().split(",")}
+    if robots_tokens & _ROBOTS_BLOCK_TOKENS:
         findings.append(
             Finding(
                 severity=Severity.CRITICAL,
-                message=f"Very little visible text content ({collector.text_chars} chars).",
-                fix="Ensure meaningful content is present in the initial HTML response, "
-                "not injected by client-side JS.",
-                dimension="accessibility",
+                message="Meta robots tag blocks indexing (noindex/none); "
+                "no AI crawler can be shown this page.",
+                fix="Remove the noindex/none directive from the robots meta tag "
+                "if this page should be discoverable.",
+                dimension="crawler_accessibility",
             )
         )
-        return 10
+        return 0, True
 
-    if ratio >= 0.15:
-        return 100
-    if ratio >= 0.05:
-        findings.append(
-            Finding(
-                severity=Severity.INFO,
-                message=f"Text-to-markup ratio is low ({ratio:.0%}).",
-                fix="Reduce markup/script overhead relative to visible text, "
-                "or server-render more content.",
-                dimension="accessibility",
-            )
-        )
-        return 60
-
-    findings.append(
-        Finding(
-            severity=Severity.WARNING,
-            message=f"Text-to-markup ratio is very low ({ratio:.0%}); "
-            "content may rely on client-side rendering.",
-            fix="Serve a server-rendered HTML snapshot to AI crawlers "
-            "(see ai_visibility.optimizer).",
-            dimension="accessibility",
-        )
-    )
-    return 20
-
-
-def _score_llms_txt(
-    has_llms_txt: Optional[bool], has_ai_txt: Optional[bool], findings: list[Finding]
-) -> int:
     if has_llms_txt is None and has_ai_txt is None:
         findings.append(
             Finding(
@@ -387,21 +297,21 @@ def _score_llms_txt(
                 message="llms.txt / ai.txt presence was not checked.",
                 fix="Pass has_llms_txt/has_ai_txt to score_page(), "
                 "or use `ai-visibility audit <url>`.",
-                dimension="llms_txt",
+                dimension="crawler_accessibility",
             )
         )
-        return 50
+        return 50, False
 
-    score = 0
+    score = 40
     if has_llms_txt:
-        score += 70
+        score += 30
     elif has_llms_txt is False:
         findings.append(
             Finding(
                 severity=Severity.WARNING,
                 message="No llms.txt found.",
                 fix="Generate one with ai_visibility.generators.generate_llms_txt().",
-                dimension="llms_txt",
+                dimension="crawler_accessibility",
             )
         )
 
@@ -413,28 +323,185 @@ def _score_llms_txt(
                 severity=Severity.INFO,
                 message="No ai.txt found.",
                 fix="Generate one with ai_visibility.generators.generate_ai_txt().",
-                dimension="llms_txt",
+                dimension="crawler_accessibility",
+            )
+        )
+
+    return min(score, 100), False
+
+
+def _score_eeat_signals(collector: _SignalCollector, findings: list[Finding]) -> int:
+    score = 0
+    missing = []
+
+    if collector.meta_author:
+        score += 30
+    else:
+        missing.append("an author meta tag")
+
+    has_jsonld_authority = False
+    for block in collector.jsonld_blocks:
+        try:
+            parsed = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict) and ("author" in parsed or "publisher" in parsed):
+            has_jsonld_authority = True
+            break
+    if has_jsonld_authority:
+        score += 40
+    else:
+        missing.append("author/publisher in JSON-LD")
+
+    if collector.has_contact_link:
+        score += 30
+    else:
+        missing.append("a contact link (mailto:/tel:)")
+
+    if missing:
+        findings.append(
+            Finding(
+                severity=Severity.WARNING if score == 0 else Severity.INFO,
+                message=f"Missing authority/trust signals: {', '.join(missing)}.",
+                fix="Add an author meta tag, author/publisher JSON-LD, and a "
+                "contact link to establish E-E-A-T signals.",
+                dimension="eeat_signals",
             )
         )
 
     return score
 
 
+def _score_fact_density(collector: _SignalCollector, findings: list[Finding]) -> int:
+    if collector.total_word_count == 0:
+        findings.append(
+            Finding(
+                severity=Severity.WARNING,
+                message="No visible text content to evaluate factual density against.",
+                fix="Add substantive written content to the page.",
+                dimension="fact_density",
+            )
+        )
+        return 0
+
+    density = collector.fact_token_count / collector.total_word_count * 100
+
+    if density >= 3:
+        return 100
+    if density >= 1.5:
+        return 70
+    if density >= 0.5:
+        return 40
+
+    findings.append(
+        Finding(
+            severity=Severity.INFO,
+            message=f"Low factual density ({density:.1f} concrete numbers/stats per 100 words).",
+            fix="Include more concrete numbers, dates, and statistics "
+            "to make content easier to cite.",
+            dimension="fact_density",
+        )
+    )
+    return 10
+
+
+def _score_snippability(collector: _SignalCollector, findings: list[Finding]) -> int:
+    if not collector.headings:
+        findings.append(
+            Finding(
+                severity=Severity.INFO,
+                message="No headings to evaluate section snippability against.",
+                fix="Break content into headed sections so each can be excerpted independently.",
+                dimension="snippability",
+            )
+        )
+        return 0
+
+    well_formed = sum(1 for count in collector.section_word_counts if count >= _MIN_SECTION_WORDS)
+    score = round(100 * well_formed / len(collector.headings))
+
+    if score < 100:
+        findings.append(
+            Finding(
+                severity=Severity.INFO,
+                message="Some sections have too little content under their heading "
+                "to stand alone as an excerpt.",
+                fix=f"Ensure each section has at least {_MIN_SECTION_WORDS} words "
+                "of self-contained content.",
+                dimension="snippability",
+            )
+        )
+
+    return score
+
+
+def _score_answer_front_loading(collector: _SignalCollector, findings: list[Finding]) -> int:
+    if collector.headings and collector.headings[0][0] == 1:
+        lead_words = collector.section_word_counts[0]
+    else:
+        lead_words = collector.first_paragraph_word_count
+
+    if lead_words >= _STRONG_ANSWER_WORDS:
+        return 100
+
+    if lead_words >= _WEAK_ANSWER_WORDS:
+        findings.append(
+            Finding(
+                severity=Severity.INFO,
+                message="The opening content is brief; a fuller direct answer near "
+                "the top would help AI systems extract it.",
+                fix=f"Lead with at least {_STRONG_ANSWER_WORDS} words directly "
+                "answering the page's main question.",
+                dimension="answer_front_loading",
+            )
+        )
+        return 60
+
+    if lead_words > 0:
+        findings.append(
+            Finding(
+                severity=Severity.WARNING,
+                message="Very little content appears before the reader has to "
+                "dig further into the page.",
+                fix=f"Lead with at least {_STRONG_ANSWER_WORDS} words directly "
+                "answering the page's main question.",
+                dimension="answer_front_loading",
+            )
+        )
+        return 20
+
+    findings.append(
+        Finding(
+            severity=Severity.CRITICAL,
+            message="No direct-answer content found near the top of the page.",
+            fix="Open the page (or its main heading's section) with a direct, "
+            "self-contained answer to its main question.",
+            dimension="answer_front_loading",
+        )
+    )
+    return 0
+
+
 def score_page(
     html: str,
-    url: Optional[str] = None,
-    config: Optional[ScoringConfig] = None,
-    has_llms_txt: Optional[bool] = None,
-    has_ai_txt: Optional[bool] = None,
+    url: str | None = None,
+    config: ScoringConfig | None = None,
+    has_llms_txt: bool | None = None,
+    has_ai_txt: bool | None = None,
 ) -> ScoreResult:
     """Score an HTML page across GEO/AI-visibility dimensions.
+
+    The dimension set and default weights are vendored from the npm
+    package's ``scoring-weights.json`` (see
+    :mod:`ai_visibility.scoring_weights`) so results use the same rubric
+    as the JS/TypeScript version.
 
     Args:
         html: The page's HTML source.
         url: The page's URL, used only for context in findings (unused
             for now, reserved for future dimension-specific messages).
-        config: Per-dimension weights. Defaults to :class:`ScoringConfig`'s
-            built-in weights.
+        config: Per-dimension weight overrides. Unset fields fall back to
+            the vendored defaults.
         has_llms_txt: Whether ``llms.txt`` is known to exist for this site.
             Pass ``None`` (default) if unknown — checking requires an HTTP
             request, which the core scoring engine deliberately does not make.
@@ -442,7 +509,10 @@ def score_page(
 
     Returns:
         A :class:`~ai_visibility.types.ScoreResult` with an overall score,
-        per-dimension scores, and actionable findings.
+        per-dimension scores, and actionable findings. If the page's meta
+        robots tag hard-blocks indexing, ``overall_score`` is forced to 0
+        regardless of other dimensions, per the vendored crawler
+        accessibility dimension's definition.
     """
     del url  # reserved for future use
     cfg = config or ScoringConfig()
@@ -451,25 +521,40 @@ def score_page(
     collector.close()
 
     findings: list[Finding] = []
+
+    crawler_accessibility_score, hard_block = _score_crawler_accessibility(
+        collector, has_llms_txt, has_ai_txt, findings
+    )
+
     dimension_scores = {
-        "structured_data": _score_structured_data(collector, findings),
-        "semantic_html": _score_semantic_html(collector, findings),
-        "meta_tags": _score_meta_tags(collector, findings),
-        "heading_hierarchy": _score_heading_hierarchy(collector, findings),
-        "accessibility": _score_accessibility(collector, html, findings),
-        "llms_txt": _score_llms_txt(has_llms_txt, has_ai_txt, findings),
+        "answer_front_loading": _score_answer_front_loading(collector, findings),
+        "eeat_signals": _score_eeat_signals(collector, findings),
+        "heading_structure": _score_heading_structure(collector, findings),
+        "schema_coverage": _score_schema_coverage(collector, findings),
+        "fact_density": _score_fact_density(collector, findings),
+        "snippability": _score_snippability(collector, findings),
+        "crawler_accessibility": crawler_accessibility_score,
     }
 
-    weights = {
-        "structured_data": cfg.structured_data_weight,
-        "semantic_html": cfg.semantic_html_weight,
-        "meta_tags": cfg.meta_tags_weight,
-        "heading_hierarchy": cfg.heading_hierarchy_weight,
-        "accessibility": cfg.accessibility_weight,
-        "llms_txt": cfg.llms_txt_weight,
+    default_weights = get_default_weights()
+    overrides: dict[str, float | None] = {
+        "answer_front_loading": cfg.answer_front_loading_weight,
+        "eeat_signals": cfg.eeat_signals_weight,
+        "heading_structure": cfg.heading_structure_weight,
+        "schema_coverage": cfg.schema_coverage_weight,
+        "fact_density": cfg.fact_density_weight,
+        "snippability": cfg.snippability_weight,
+        "crawler_accessibility": cfg.crawler_accessibility_weight,
     }
+    weights: dict[str, float] = {}
+    for dim in dimension_scores:
+        override = overrides[dim]
+        weights[dim] = override if override is not None else default_weights[dim]
 
-    overall = round(sum(dimension_scores[dim] * weights[dim] for dim in dimension_scores))
+    if hard_block:
+        overall = 0
+    else:
+        overall = round(sum(dimension_scores[dim] * weights[dim] for dim in dimension_scores))
 
     return ScoreResult(
         overall_score=overall,

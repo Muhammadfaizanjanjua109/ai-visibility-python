@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 class CrawlerCategory(str, Enum):
@@ -45,8 +45,8 @@ class CrawlerInfo:
     user_agent_pattern: str
     category: CrawlerCategory
     verified: bool = False
-    source_url: Optional[str] = None
-    last_checked: Optional[str] = None
+    source_url: str | None = None
+    last_checked: str | None = None
 
 
 @dataclass
@@ -76,7 +76,7 @@ class LlmsTxtLink:
 
     title: str
     url: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclass
@@ -98,8 +98,8 @@ class LlmsTxtConfig:
     """
 
     title: str
-    summary: Optional[str] = None
-    details: Optional[str] = None
+    summary: str | None = None
+    details: str | None = None
     sections: list[LlmsTxtSection] = field(default_factory=list)
 
 
@@ -117,7 +117,7 @@ class LlmsFullTxtConfig:
     """Configuration for :func:`ai_visibility.generators.generate_llms_full_txt`."""
 
     title: str
-    summary: Optional[str] = None
+    summary: str | None = None
     pages: list[LlmsFullTxtPage] = field(default_factory=list)
 
 
@@ -127,8 +127,8 @@ class AiTxtConfig:
 
     allow: list[str] = field(default_factory=list)
     disallow: list[str] = field(default_factory=list)
-    contact: Optional[str] = None
-    license: Optional[str] = None
+    contact: str | None = None
+    license: str | None = None
 
 
 @dataclass
@@ -157,20 +157,30 @@ class Finding:
 
     severity: Severity
     message: str
-    fix: Optional[str] = None
-    dimension: Optional[str] = None
+    fix: str | None = None
+    dimension: str | None = None
 
 
 @dataclass
 class ScoringConfig:
-    """Weights (0-1, should sum to 1.0) for each scoring dimension."""
+    """Per-dimension weight overrides (0-1) for :func:`ai_visibility.scoring.score_page`.
 
-    structured_data_weight: float = 0.25
-    semantic_html_weight: float = 0.15
-    meta_tags_weight: float = 0.15
-    heading_hierarchy_weight: float = 0.15
-    accessibility_weight: float = 0.15
-    llms_txt_weight: float = 0.15
+    Each dimension corresponds to one entry in the vendored
+    ``scoring_weights.json`` (the same artifact the npm package publishes
+    as ``dist/scoring-weights.json``), which is also where the *default*
+    weight for each dimension comes from — see
+    :func:`ai_visibility.scoring_weights.get_default_weights`. Leave a
+    field as ``None`` to use that vendored default; set it to override
+    just that one dimension's weight.
+    """
+
+    answer_front_loading_weight: float | None = None
+    eeat_signals_weight: float | None = None
+    heading_structure_weight: float | None = None
+    schema_coverage_weight: float | None = None
+    fact_density_weight: float | None = None
+    snippability_weight: float | None = None
+    crawler_accessibility_weight: float | None = None
 
 
 @dataclass
@@ -198,7 +208,7 @@ class CrawlerVisit:
     crawler_name: str
     path: str
     timestamp: datetime
-    category: Optional[CrawlerCategory] = None
+    category: CrawlerCategory | None = None
 
 
 @dataclass
@@ -208,8 +218,8 @@ class AnalyticsSummary:
     total_visits: int
     visits_by_crawler: dict[str, int]
     visits_by_path: dict[str, int]
-    first_visit: Optional[datetime] = None
-    last_visit: Optional[datetime] = None
+    first_visit: datetime | None = None
+    last_visit: datetime | None = None
 
 
 @runtime_checkable
@@ -226,8 +236,8 @@ class AnalyticsStore(Protocol):
 
     def query(
         self,
-        since: Optional[datetime] = None,
-        crawler_name: Optional[str] = None,
+        since: datetime | None = None,
+        crawler_name: str | None = None,
     ) -> list[CrawlerVisit]:
         """Return logged visits matching the given filters."""
         ...

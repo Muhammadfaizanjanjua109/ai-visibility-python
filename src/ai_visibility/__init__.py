@@ -39,6 +39,11 @@ from ai_visibility.schema import (
     website_schema,
 )
 from ai_visibility.scoring import score_page
+from ai_visibility.scoring_weights import (
+    ScoringDimension,
+    get_default_weights,
+    get_scoring_dimensions,
+)
 from ai_visibility.types import (
     AiTxtConfig,
     AnalysisResult,
@@ -95,6 +100,9 @@ __all__ = [
     # scoring / analysis
     "score_page",
     "analyze_content",
+    "get_default_weights",
+    "get_scoring_dimensions",
+    "ScoringDimension",
     # analytics
     "CrawlerAnalytics",
     "InMemoryAnalyticsStore",

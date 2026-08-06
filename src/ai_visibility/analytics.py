@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import datetime, timezone
-from typing import Optional
 
 from ai_visibility.types import AnalyticsStore, AnalyticsSummary, CrawlerInfo, CrawlerVisit
 
@@ -25,8 +24,8 @@ class InMemoryAnalyticsStore:
 
     def query(
         self,
-        since: Optional[datetime] = None,
-        crawler_name: Optional[str] = None,
+        since: datetime | None = None,
+        crawler_name: str | None = None,
     ) -> list[CrawlerVisit]:
         """Return stored visits matching the given filters."""
         results = self._visits
@@ -41,7 +40,7 @@ class InMemoryAnalyticsStore:
 class CrawlerAnalytics:
     """Logs and summarizes AI crawler visits against a pluggable store."""
 
-    def __init__(self, store: Optional[AnalyticsStore] = None) -> None:
+    def __init__(self, store: AnalyticsStore | None = None) -> None:
         """Create an analytics tracker.
 
         Args:
@@ -55,7 +54,7 @@ class CrawlerAnalytics:
         self,
         crawler: CrawlerInfo,
         path: str,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """Record a single crawler visit.
 
@@ -76,8 +75,8 @@ class CrawlerAnalytics:
 
     def get_visits(
         self,
-        since: Optional[datetime] = None,
-        crawler_name: Optional[str] = None,
+        since: datetime | None = None,
+        crawler_name: str | None = None,
     ) -> list[CrawlerVisit]:
         """Return logged visits, optionally filtered.
 

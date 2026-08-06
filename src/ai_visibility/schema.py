@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Union
+from typing import Any
 
 _SCHEMA_CONTEXT = "https://schema.org"
 
-StrOrList = Union[str, list[str]]
+StrOrList = str | list[str]
 
 
 def _clean(data: dict[str, Any]) -> dict[str, Any]:
@@ -18,15 +18,15 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
 def article_schema(
     *,
     headline: str,
-    description: Optional[str] = None,
-    author_name: Optional[str] = None,
-    author_url: Optional[str] = None,
-    date_published: Optional[str] = None,
-    date_modified: Optional[str] = None,
-    image: Optional[StrOrList] = None,
-    publisher_name: Optional[str] = None,
-    publisher_logo_url: Optional[str] = None,
-    url: Optional[str] = None,
+    description: str | None = None,
+    author_name: str | None = None,
+    author_url: str | None = None,
+    date_published: str | None = None,
+    date_modified: str | None = None,
+    image: StrOrList | None = None,
+    publisher_name: str | None = None,
+    publisher_logo_url: str | None = None,
+    url: str | None = None,
     article_type: str = "Article",
 ) -> dict[str, Any]:
     """Build an ``Article`` (or subtype) JSON-LD schema.
@@ -82,16 +82,16 @@ def article_schema(
 def product_schema(
     *,
     name: str,
-    description: Optional[str] = None,
-    image: Optional[StrOrList] = None,
-    sku: Optional[str] = None,
-    brand: Optional[str] = None,
-    price: Optional[Union[str, float]] = None,
-    price_currency: Optional[str] = None,
-    availability: Optional[str] = None,
-    url: Optional[str] = None,
-    rating_value: Optional[float] = None,
-    review_count: Optional[int] = None,
+    description: str | None = None,
+    image: StrOrList | None = None,
+    sku: str | None = None,
+    brand: str | None = None,
+    price: str | float | None = None,
+    price_currency: str | None = None,
+    availability: str | None = None,
+    url: str | None = None,
+    rating_value: float | None = None,
+    review_count: int | None = None,
 ) -> dict[str, Any]:
     """Build a ``Product`` JSON-LD schema, with optional offer and rating.
 
@@ -180,11 +180,11 @@ def faq_schema(questions: list[dict[str, str]]) -> dict[str, Any]:
 def howto_schema(
     *,
     name: str,
-    description: Optional[str] = None,
-    steps: Optional[list[dict[str, str]]] = None,
-    total_time: Optional[str] = None,
-    image: Optional[StrOrList] = None,
-    estimated_cost: Optional[str] = None,
+    description: str | None = None,
+    steps: list[dict[str, str]] | None = None,
+    total_time: str | None = None,
+    image: StrOrList | None = None,
+    estimated_cost: str | None = None,
 ) -> dict[str, Any]:
     """Build a ``HowTo`` JSON-LD schema.
 
@@ -221,13 +221,13 @@ def howto_schema(
 def organization_schema(
     *,
     name: str,
-    url: Optional[str] = None,
-    logo: Optional[str] = None,
-    description: Optional[str] = None,
-    same_as: Optional[list[str]] = None,
-    contact_telephone: Optional[str] = None,
-    contact_type: Optional[str] = None,
-    contact_email: Optional[str] = None,
+    url: str | None = None,
+    logo: str | None = None,
+    description: str | None = None,
+    same_as: list[str] | None = None,
+    contact_telephone: str | None = None,
+    contact_type: str | None = None,
+    contact_email: str | None = None,
 ) -> dict[str, Any]:
     """Build an ``Organization`` JSON-LD schema.
 
@@ -272,18 +272,18 @@ def local_business_schema(
     *,
     name: str,
     business_type: str = "LocalBusiness",
-    url: Optional[str] = None,
-    image: Optional[StrOrList] = None,
-    telephone: Optional[str] = None,
-    street_address: Optional[str] = None,
-    address_locality: Optional[str] = None,
-    address_region: Optional[str] = None,
-    postal_code: Optional[str] = None,
-    address_country: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-    opening_hours: Optional[list[str]] = None,
-    price_range: Optional[str] = None,
+    url: str | None = None,
+    image: StrOrList | None = None,
+    telephone: str | None = None,
+    street_address: str | None = None,
+    address_locality: str | None = None,
+    address_region: str | None = None,
+    postal_code: str | None = None,
+    address_country: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    opening_hours: list[str] | None = None,
+    price_range: str | None = None,
 ) -> dict[str, Any]:
     """Build a ``LocalBusiness`` (or subtype) JSON-LD schema.
 
@@ -366,12 +366,12 @@ def breadcrumb_schema(items: list[dict[str, str]]) -> dict[str, Any]:
 def video_schema(
     *,
     name: str,
-    description: Optional[str] = None,
-    thumbnail_url: Optional[StrOrList] = None,
-    upload_date: Optional[str] = None,
-    duration: Optional[str] = None,
-    content_url: Optional[str] = None,
-    embed_url: Optional[str] = None,
+    description: str | None = None,
+    thumbnail_url: StrOrList | None = None,
+    upload_date: str | None = None,
+    duration: str | None = None,
+    content_url: str | None = None,
+    embed_url: str | None = None,
 ) -> dict[str, Any]:
     """Build a ``VideoObject`` JSON-LD schema.
 
@@ -406,15 +406,15 @@ def event_schema(
     *,
     name: str,
     start_date: str,
-    end_date: Optional[str] = None,
-    location_name: Optional[str] = None,
-    location_address: Optional[str] = None,
-    description: Optional[str] = None,
-    image: Optional[StrOrList] = None,
-    event_status: Optional[str] = None,
-    event_attendance_mode: Optional[str] = None,
-    organizer_name: Optional[str] = None,
-    organizer_url: Optional[str] = None,
+    end_date: str | None = None,
+    location_name: str | None = None,
+    location_address: str | None = None,
+    description: str | None = None,
+    image: StrOrList | None = None,
+    event_status: str | None = None,
+    event_attendance_mode: str | None = None,
+    organizer_name: str | None = None,
+    organizer_url: str | None = None,
 ) -> dict[str, Any]:
     """Build an ``Event`` JSON-LD schema.
 
@@ -476,8 +476,8 @@ def website_schema(
     *,
     name: str,
     url: str,
-    description: Optional[str] = None,
-    search_url_template: Optional[str] = None,
+    description: str | None = None,
+    search_url_template: str | None = None,
 ) -> dict[str, Any]:
     """Build a ``WebSite`` JSON-LD schema, with an optional sitelinks search box.
 

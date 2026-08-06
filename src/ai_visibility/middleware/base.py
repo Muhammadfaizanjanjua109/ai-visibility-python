@@ -8,8 +8,9 @@ and analytics logic is written and tested exactly once.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any
 
 from ai_visibility.analytics import CrawlerAnalytics
 from ai_visibility.detector import detect_crawler
@@ -19,7 +20,7 @@ from ai_visibility.types import CrawlerInfo, OptimizeOptions
 OnDetectCallback = Callable[[CrawlerInfo, str], None]
 
 
-def is_html_content_type(content_type: Optional[str]) -> bool:
+def is_html_content_type(content_type: str | None) -> bool:
     """Return whether a ``Content-Type`` header value denotes HTML.
 
     Args:
@@ -55,8 +56,8 @@ class MiddlewareConfig:
     inject_schemas: bool = False
     schemas: list[dict[str, Any]] = field(default_factory=list)
     log_visits: bool = True
-    on_detect: Optional[OnDetectCallback] = None
-    optimize_options: Optional[OptimizeOptions] = None
+    on_detect: OnDetectCallback | None = None
+    optimize_options: OptimizeOptions | None = None
 
 
 class AIVisibilityCore:
@@ -70,8 +71,8 @@ class AIVisibilityCore:
 
     def __init__(
         self,
-        config: Optional[MiddlewareConfig] = None,
-        analytics: Optional[CrawlerAnalytics] = None,
+        config: MiddlewareConfig | None = None,
+        analytics: CrawlerAnalytics | None = None,
     ) -> None:
         """Create the shared middleware core.
 
@@ -85,7 +86,7 @@ class AIVisibilityCore:
         self.config = config or MiddlewareConfig()
         self.analytics = analytics or CrawlerAnalytics()
 
-    def handle_request(self, user_agent: Optional[str], path: str) -> Optional[CrawlerInfo]:
+    def handle_request(self, user_agent: str | None, path: str) -> CrawlerInfo | None:
         """Detect a crawler and run visit-logging side effects for a request.
 
         Args:

@@ -121,6 +121,38 @@ ai-visibility generate llms-txt --title "Acme" --description "Acme makes widgets
 ai-visibility generate robots-txt
 ```
 
+## Vendored data
+
+Two files are copied verbatim from the published npm package rather than
+reimplemented, so this package doesn't silently drift from the JS/TypeScript
+version's behavior:
+
+| Vendored file | Source in the npm package | Consumed by |
+| --- | --- | --- |
+| `src/ai_visibility/crawlers.json` | `dist/crawlers.json` | `ai_visibility.crawlers` (crawler registry: names, categories, verification status) |
+| `src/ai_visibility/scoring_weights.json` | `dist/scoring-weights.json` | `ai_visibility.scoring_weights` (the 7 GEO scoring dimensions and their default weights) |
+
+Both were vendored from `ai-visibility@0.5.0` on npm (fetched via
+`unpkg.com/ai-visibility@<version>/dist/...`, since the npm package ships
+these as build artifacts rather than checking them into `src/`). The
+`answer_front_loading` / `eeat_signals` / `heading_structure` /
+`schema_coverage` / `fact_density` / `snippability` / `crawler_accessibility`
+dimension keys, labels, and weights in `scoring_weights.json` are the exact
+values published there — the Python code in `ai_visibility.scoring` that
+*computes* each dimension's score from HTML is an original implementation
+written to match each dimension's published description, since the npm
+package's own docs state the rubric is a heuristic with no published exact
+formulas.
+
+### Re-verification checklist (run before each release)
+
+- [ ] Check the current npm version: `npm view ai-visibility version`
+- [ ] Fetch the latest registry: `https://unpkg.com/ai-visibility@<version>/dist/crawlers.json` and diff it against `src/ai_visibility/crawlers.json`
+- [ ] Fetch the latest weights: `https://unpkg.com/ai-visibility@<version>/dist/scoring-weights.json` and diff it against `src/ai_visibility/scoring_weights.json`
+- [ ] If either file changed, update the vendored copy (and `ai_visibility.crawlers` / `ai_visibility.scoring_weights` loader logic if the schema itself changed, e.g. new fields or renamed keys)
+- [ ] Re-run the full test suite — `tests/test_detector.py` and `tests/test_scoring_weights.py` assert against the vendored data and will fail loudly on an unhandled schema change
+- [ ] Note the synced npm version in `CHANGELOG.md`
+
 ## Links
 
 - npm package (Node.js/Next.js): <https://www.npmjs.com/package/ai-visibility>

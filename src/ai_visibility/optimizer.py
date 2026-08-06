@@ -10,7 +10,7 @@ import json
 import re
 from html import escape
 from html.parser import HTMLParser
-from typing import Any, Optional
+from typing import Any
 
 from ai_visibility.types import OptimizeOptions
 
@@ -111,8 +111,8 @@ class _OptimizingParser(HTMLParser):
         self.options = options
         self.output: list[str] = []
         self._open_stack: list[str] = []
-        self._skip_from_depth: Optional[int] = None
-        self._raw_text_tag: Optional[str] = None
+        self._skip_from_depth: int | None = None
+        self._raw_text_tag: str | None = None
 
     @property
     def _skipping(self) -> bool:
@@ -166,9 +166,7 @@ class _OptimizingParser(HTMLParser):
             if tag in _RAW_TEXT_TAGS:
                 self._raw_text_tag = tag
 
-    def _filter_attrs(
-        self, attrs: list[tuple[str, str | None]]
-    ) -> list[tuple[str, str | None]]:
+    def _filter_attrs(self, attrs: list[tuple[str, str | None]]) -> list[tuple[str, str | None]]:
         opts = self.options
         filtered = []
         for name, value in attrs:

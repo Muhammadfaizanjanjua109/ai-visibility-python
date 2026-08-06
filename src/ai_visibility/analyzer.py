@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from ai_visibility.scoring import score_page
 from ai_visibility.types import AnalysisResult, Finding, ScoreResult, ScoringConfig, Severity
 
@@ -43,10 +41,10 @@ def _build_summary(score: ScoreResult) -> str:
 
 def analyze_content(
     html: str,
-    url: Optional[str] = None,
-    config: Optional[ScoringConfig] = None,
-    has_llms_txt: Optional[bool] = None,
-    has_ai_txt: Optional[bool] = None,
+    url: str | None = None,
+    config: ScoringConfig | None = None,
+    has_llms_txt: bool | None = None,
+    has_ai_txt: bool | None = None,
 ) -> AnalysisResult:
     """Produce a human-readable AI-visibility report for an HTML page.
 
