@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "0.5.0",
+  "generatedAt": "2026-08-05T17:24:13.477Z",
+  "source": "https://github.com/Muhammadfaizanjanjua109/ai-visibility/blob/main/src/analyzer/scoring-weights.ts",
+  "docs": "https://github.com/Muhammadfaizanjanjua109/ai-visibility/blob/main/docs/scoring.md",
+  "dimensions": [
+    {
+      "key": "answerFrontLoading",
+      "label": "Answer placement",
+      "weight": 0.2,
+      "description": "Whether a direct answer to the page's topic appears near the top, where AI systems weight content most heavily."
+    },
+    {
+      "key": "eeatSignals",
+      "label": "Authority signals (E-E-A-T)",
+      "weight": 0.2,
+      "description": "Author, organization, contact, and trust-signal markup — what separates \"extractable\" content from \"citable\" content."
+    },
+    {
+      "key": "headingStructure",
+      "label": "Structure",
+      "weight": 0.15,
+      "description": "A single H1 and a consistent, unskipped heading hierarchy, which is what makes a page machine-segmentable."
+    },
+    {
+      "key": "schemaCoverage",
+      "label": "Structured data",
+      "weight": 0.15,
+      "description": "Valid JSON-LD structured data, the most direct machine-readable signal a page can offer."
+    },
+    {
+      "key": "factDensity",
+      "label": "Factual density",
+      "weight": 0.1,
+      "description": "Concrete numbers, dates, and statistics per 100 words. The most heuristic of the checks, weighted accordingly."
+    },
+    {
+      "key": "snippability",
+      "label": "Semantic clarity",
+      "weight": 0.1,
+      "description": "Whether each section under a heading stands alone with enough context to be quoted or excerpted independently."
+    },
+    {
+      "key": "crawlerAccessibility",
+      "label": "Crawler accessibility",
+      "weight": 0.1,
+      "description": "Whether AI crawlers are actually allowed to fetch the page at all (meta robots, robots.txt, llms.txt) — a gate more than a differentiator, since a hard block already zeroes out every other dimension's value."
+    }
+  ]
+}
