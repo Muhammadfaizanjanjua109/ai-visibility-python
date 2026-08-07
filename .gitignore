@@ -23,6 +23,7 @@ env/
 htmlcov/
 
 # Editors / OS
-.vscode/
 .idea/
 .DS_Store
+config.bat
+node_modules
