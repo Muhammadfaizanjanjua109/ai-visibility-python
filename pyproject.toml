@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-visibility"
-version = "0.1.0"
-description = "Make your website optimally visible to AI crawlers, LLM search engines, and generative AI — GEO & AEO toolkit for Python"
+version = "0.5.0"
+description = "Make your website optimally visible to AI crawlers, LLM search engines, and generative AI — GEO & AEO toolkit for Django, Flask & FastAPI"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -21,13 +21,26 @@ keywords = [
     "crawler",
     "ai-visibility",
     "generative-engine-optimization",
+    "answer-engine-optimization",
     "structured-data",
     "json-ld",
     "llms-txt",
+    "ai-search",
+    "chatgpt",
+    "gptbot",
+    "claudebot",
+    "perplexity",
+    "robots-txt",
+    "crawlpod",
+    "ai-crawler",
+    "ai-seo",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: Django",
+    "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
     "Framework :: Flask",
     "Framework :: FastAPI",
     "Intended Audience :: Developers",
@@ -39,11 +52,12 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Internet :: WWW/HTTP :: Site Management",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-
 dependencies = []
 
 [project.optional-dependencies]
@@ -74,6 +88,7 @@ ai-visibility = "ai_visibility.cli:main"
 Homepage = "https://crawlpod.com"
 Documentation = "https://crawlpod.com/docs/python"
 Repository = "https://github.com/Muhammadfaizanjanjua109/ai-visibility-python"
+Changelog = "https://github.com/Muhammadfaizanjanjua109/ai-visibility-python/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/Muhammadfaizanjanjua109/ai-visibility-python/issues"
 "npm Package" = "https://www.npmjs.com/package/ai-visibility"
 
